@@ -35,3 +35,10 @@ Single self-contained HTML app: `signage-task-tracker.html` (vanilla JS + CSS, n
   - `signage-tracker-auth-v2` holds the signed-in user.
 - Migrations run at load.
 - Data is per browser. The suggested next step is a shared database so the whole team sees the same data.
+
+## Deployment
+- Live at http://tasks.nizamrazak.tech:8085, served by the Hostinger VPS (id 2092970, 187.77.136.7, Ubuntu).
+- The DNS A and AAAA records for `tasks` point at the VPS.
+- `docker-compose.yml` is the Docker project "task-manager". Caddy serves the HTML on port 8085, and the container pulls `signage-task-tracker.html` from `main` at startup.
+- To update the live site, push to `main` and then restart the "task-manager" Docker project.
+- Ports 80 and 443 on the VPS are used by another web server (keradrive). To get https://tasks.nizamrazak.tech with no port, add a reverse-proxy entry in that server pointing to 127.0.0.1:8085.

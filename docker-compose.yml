@@ -1,0 +1,13 @@
+# Deployed on the Hostinger VPS (srv2092970, 187.77.136.7) as Docker project "task-manager".
+# The container downloads the latest signage-task-tracker.html from this repo's main branch
+# each time it starts, so to publish an update: push to main, then restart the project.
+services:
+  web:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    command: >
+      sh -c "mkdir -p /srv &&
+      wget -qO /srv/index.html https://raw.githubusercontent.com/iamnizamrazak-creator/task-scheduler/main/signage-task-tracker.html &&
+      exec caddy file-server --listen :8085 --root /srv"
