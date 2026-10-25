@@ -4,6 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Task Manager</title>
+<meta name="description" content="Daily task tracking for the Design and Technical teams.">
+<meta name="theme-color" content="#0696d7">
+<meta name="application-name" content="Task Manager">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Task Manager">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -611,6 +622,7 @@ main:has(#page-dashboard:not([hidden])) { background: var(--dbg, #f3f6f9); }
   <button class="nav-btn" id="nav-dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="8" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="5" rx="1.5"/><rect x="3.5" y="14.5" width="7" height="6" rx="1.5"/><rect x="13.5" y="11.5" width="7" height="9" rx="1.5"/></svg>Dashboard</button>
   <button class="nav-btn" id="nav-report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4M9.5 9.5v11M15 9.5v11"/></svg>Task Manager</button>
   <div class="rail-spacer"></div>
+  <button class="nav-btn" id="nav-install" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5"/><path d="M5 19.5h14"/></svg><span>Install app</span></button>
   <button class="nav-btn" id="nav-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg><span class="lbl2"><span id="auth-label">Sign in</span><span class="who" id="auth-who"></span></span></button>
   <button class="nav-btn" id="nav-settings" aria-expanded="false" aria-controls="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M15.5 5.2a3 3 0 0 1 0 5.6M17.5 14.6c1.6.6 2.7 2.2 3 4.9"/></svg>Team &amp; Projects</button>
 </nav>
@@ -1037,7 +1049,7 @@ main:has(#page-dashboard:not([hidden])) { background: var(--dbg, #f3f6f9); }
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const opt = (v, label, sel) => `<option value="${esc(v)}"${sel ? " selected" : ""}>${esc(label)}</option>`;
   let toastT;
-  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, Math.max(2600, msg.length * 55)); }
   function confirmClick(btn, label, fn) {
     if (btn.dataset.armed === "1") { btn.dataset.armed = ""; btn.classList.remove("confirm"); btn.textContent = btn.dataset.orig; fn(); return; }
     btn.dataset.orig = btn.textContent; btn.dataset.armed = "1"; btn.classList.add("confirm"); btn.textContent = label;
@@ -2251,6 +2263,26 @@ main:has(#page-dashboard:not([hidden])) { background: var(--dbg, #f3f6f9); }
   applyAuth();
   fillQuickFields(); fillHighlight();
   go(location.hash === "#tasks" || location.hash === "#report" ? "report" : "dashboard");
+
+  // ---- Installable app (PWA) ----
+  const isStandalone = () => (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  let installEvt = null;
+  const installBtn = $("nav-install");
+  if (/^https?:$/.test(location.protocol) && "serviceWorker" in navigator) {
+    window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+  }
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; installBtn.hidden = false; });
+  window.addEventListener("appinstalled", () => { installEvt = null; installBtn.hidden = true; toast("Task Manager is installed. Open it from your home screen or apps."); });
+  if (isIOS && !isStandalone() && location.protocol === "https:" && document.querySelector('link[rel="manifest"]')) installBtn.hidden = false;
+  installBtn.addEventListener("click", async () => {
+    if (installEvt) { installEvt.prompt(); const r = await installEvt.userChoice.catch(() => null); if (r && r.outcome === "accepted") installBtn.hidden = true; installEvt = null; return; }
+    if (isIOS) { toast("On iPhone/iPad: tap the Share button, then “Add to Home Screen”."); return; }
+    toast("Use your browser menu and choose “Install app”.");
+  });
+  window.addEventListener("offline", () => toast("You're offline. You can keep working; changes are saved on this device."));
+  window.addEventListener("online", () => toast("Back online."));
+  window.addEventListener("hashchange", () => { if (location.hash === "#report" || location.hash === "#tasks") go("report"); else if (location.hash === "#dashboard") go("dashboard"); });
 })();
 </script>
 

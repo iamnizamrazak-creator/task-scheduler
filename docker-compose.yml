@@ -1,13 +1,24 @@
-# Deployed on the Hostinger VPS (srv2092970, 187.77.136.7) as Docker project "task-manager".
-# The container downloads the latest signage-task-tracker.html from this repo's main branch
-# each time it starts, so to publish an update: push to main, then restart the project.
+# Hostinger VPS (srv2092970, 187.77.136.7) Docker project "task-manager".
+# On every start the container downloads this repo's main branch and serves the app
+# (index page, manifest, service worker, icons) on 127.0.0.1:8085. The host's Caddy
+# serves https://tasks.nizamrazak.tech and forwards to it.
+# To publish an update: push to main, then restart the project in hPanel Docker Manager.
 services:
   web:
     image: caddy:2.8-alpine
     restart: unless-stopped
     ports:
-      - "8085:8085"
-    command: >
-      sh -c "mkdir -p /srv &&
-      wget -qO /srv/index.html https://raw.githubusercontent.com/iamnizamrazak-creator/task-scheduler/main/signage-task-tracker.html &&
-      exec caddy file-server --listen :8085 --root /srv"
+      - "127.0.0.1:8085:8085"
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        cd /tmp
+        wget -qO app.tgz https://codeload.github.com/iamnizamrazak-creator/task-scheduler/tar.gz/refs/heads/main
+        rm -rf src && mkdir src && tar xzf app.tgz -C src --strip-components=1
+        rm -rf /srv && mkdir -p /srv/icons
+        cp src/signage-task-tracker.html /srv/index.html
+        cp src/manifest.webmanifest src/sw.js /srv/
+        cp src/icons/* /srv/icons/
+        exec caddy run --config src/web/Caddyfile --adapter caddyfile

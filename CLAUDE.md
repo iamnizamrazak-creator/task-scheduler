@@ -36,9 +36,14 @@ Single self-contained HTML app: `signage-task-tracker.html` (vanilla JS + CSS, n
 - Migrations run at load.
 - Data is per browser. The suggested next step is a shared database so the whole team sees the same data.
 
+## PWA (installable app)
+- `manifest.webmanifest`, `sw.js`, and the icons in `icons/` sit next to the HTML. The page links them and registers the service worker only over http(s).
+- Service worker: pages are network-first, falling back to a cached copy when offline. Icons, manifest and Google Fonts are cache-first. Bump `VERSION` in `sw.js` when changing cached static files.
+- The sidebar has an "Install app" button, shown when the browser offers install, plus an iOS hint for "Add to Home Screen". Offline and online toasts tell the user when the connection changes.
+- Data is localStorage, so the app works fully offline.
+
 ## Deployment
-- Live at http://tasks.nizamrazak.tech:8085, served by the Hostinger VPS (id 2092970, 187.77.136.7, Ubuntu).
-- The DNS A and AAAA records for `tasks` point at the VPS.
-- `docker-compose.yml` is the Docker project "task-manager". Caddy serves the HTML on port 8085, and the container pulls `signage-task-tracker.html` from `main` at startup.
-- To update the live site, push to `main` and then restart the "task-manager" Docker project.
-- Ports 80 and 443 on the VPS are used by another web server (keradrive). To get https://tasks.nizamrazak.tech with no port, add a reverse-proxy entry in that server pointing to 127.0.0.1:8085.
+- Live at **https://tasks.nizamrazak.tech** on the Hostinger VPS (id 2092970, 187.77.136.7, Ubuntu). The DNS A and AAAA records for `tasks` point at the VPS.
+- The host runs Caddy as a systemd service with `/etc/caddy/Caddyfile`. That file has a `tasks.nizamrazak.tech` block that does `reverse_proxy 127.0.0.1:8085` with automatic Let's Encrypt HTTPS. The backup of the original file is `/etc/caddy/Caddyfile.bak-before-tasks`. The same file also serves keradrive.nizamrazak.tech; don't break it.
+- `docker-compose.yml` is the hPanel Docker project "task-manager". On every start it downloads the `main` branch tarball, copies the HTML to `/srv/index.html` along with the manifest, sw.js and icons, and runs Caddy with `web/Caddyfile` on 127.0.0.1:8085.
+- To update the live site, push to `main` and then restart the "task-manager" project, either in hPanel Docker Manager or with the API `vps_docker_restart`.

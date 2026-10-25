@@ -1,0 +1,23 @@
+{
+  "name": "Task Manager",
+  "short_name": "Task Manager",
+  "description": "Daily task tracking for the Design and Technical teams.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#f5f5f5",
+  "theme_color": "#0696d7",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Dashboard", "url": "/#dashboard", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Task Manager board", "url": "/#report", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
